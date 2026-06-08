@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="theme-color" content="#0a0e1a" />
+<title>Pronos Mondial 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#0a0e1a; --bg2:#11172b; --card:#161d33; --line:#26304d;
+    --txt:#eef2ff; --mut:#8b95b5; --accent:#00e5a0; --accent2:#ff5d73;
+    --gold:#ffd25a; --radius:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(0,229,160,.10), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(255,93,115,.08), transparent 55%),
+      var(--bg);
+    color:var(--txt); font-family:"Bricolage Grotesque",system-ui,sans-serif;
+    min-height:100vh; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:560px;margin:0 auto;padding:18px 16px 110px}
+  h1,h2,h3{font-weight:700;letter-spacing:-.02em;line-height:1.05}
+  .mono{font-family:"Space Mono",monospace}
+  .brand{display:flex;align-items:center;gap:10px;padding:6px 0 18px}
+  .brand .dot{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--accent),#0bbf85);color:#04130c;font-size:20px;
+    box-shadow:0 8px 24px rgba(0,229,160,.35)}
+  .brand h1{font-size:21px}
+  .brand small{color:var(--mut);font-size:12px;display:block;font-weight:500}
+
+  .card{background:linear-gradient(180deg,var(--card),#131a2e);border:1px solid var(--line);
+    border-radius:var(--radius);padding:16px;margin-bottom:14px;
+    box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  label{font-size:12px;color:var(--mut);display:block;margin:0 0 6px;font-weight:600}
+  input{width:100%;background:#0d1326;border:1px solid var(--line);color:var(--txt);
+    padding:13px 14px;border-radius:12px;font-size:16px;font-family:inherit;outline:none}
+  input:focus{border-color:var(--accent)}
+  .btn{width:100%;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:700;
+    font-family:inherit;cursor:pointer;background:linear-gradient(135deg,var(--accent),#0bbf85);
+    color:#04130c;transition:transform .06s, opacity .2s}
+  .btn:active{transform:scale(.985)} .btn:disabled{opacity:.5}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--txt)}
+  .btn.sm{width:auto;padding:9px 14px;font-size:13px}
+  .link{background:none;border:none;color:var(--accent);font:inherit;cursor:pointer;text-decoration:underline}
+  .err{color:var(--accent2);font-size:13px;margin-top:10px}
+  .ok{color:var(--accent);font-size:13px;margin-top:10px}
+
+  /* tabs */
+  .tabs{position:fixed;bottom:0;left:0;right:0;background:rgba(10,14,26,.92);
+    backdrop-filter:blur(14px);border-top:1px solid var(--line);display:flex;z-index:20}
+  .tabs .inner{max-width:560px;margin:0 auto;display:flex;width:100%}
+  .tab{flex:1;background:none;border:none;color:var(--mut);padding:11px 4px 16px;
+    font:inherit;font-size:11px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;
+    align-items:center;gap:3px}
+  .tab.active{color:var(--accent)} .tab .ic{font-size:21px}
+
+  /* match card */
+  .stage-h{display:flex;align-items:center;gap:8px;margin:18px 2px 8px;color:var(--mut);
+    font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+  .stage-h::after{content:"";flex:1;height:1px;background:var(--line)}
+  .match{padding:14px}
+  .match .meta{display:flex;justify-content:space-between;align-items:center;
+    font-size:11px;color:var(--mut);margin-bottom:12px;font-weight:600}
+  .badge{padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em}
+  .badge.live{background:rgba(255,93,115,.16);color:var(--accent2)}
+  .badge.locked{background:rgba(139,149,181,.15);color:var(--mut)}
+  .badge.open{background:rgba(0,229,160,.14);color:var(--accent)}
+  .badge.done{background:rgba(255,210,90,.16);color:var(--gold)}
+  .teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
+  .team{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+  .team .flag{font-size:30px;line-height:1}
+  .team .nm{font-size:13px;font-weight:700}
+  .score-in{display:flex;align-items:center;gap:6px;justify-content:center}
+  .score-in input{width:46px;text-align:center;font-size:20px;font-weight:700;padding:8px 0;
+    font-family:"Space Mono",monospace}
+  .vs{color:var(--mut);font-weight:700;font-size:13px}
+  .realscore{font-family:"Space Mono",monospace;font-size:22px;font-weight:700;text-align:center}
+  .pts{margin-top:11px;text-align:center;font-size:12px;font-weight:700}
+  .pts.win{color:var(--accent)} .pts.zero{color:var(--mut)}
+  .saverow{display:flex;gap:8px;margin-top:12px;align-items:center}
+  .saved-tag{font-size:11px;color:var(--accent);font-weight:600}
+
+  /* leaderboard */
+  .lb-row{display:flex;align-items:center;gap:12px;padding:13px 14px;border:1px solid var(--line);
+    border-radius:14px;margin-bottom:8px;background:var(--card)}
+  .lb-row.me{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  .rank{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-weight:700;
+    font-family:"Space Mono",monospace;font-size:14px;background:#0d1326;color:var(--mut);flex:0 0 auto}
+  .rank.g1{background:linear-gradient(135deg,#ffe07a,#f5b400);color:#3a2a00}
+  .rank.g2{background:linear-gradient(135deg,#e8edf7,#aab4c9);color:#2a3142}
+  .rank.g3{background:linear-gradient(135deg,#e9a877,#c97b3d);color:#3a1e00}
+  .lb-name{flex:1;font-weight:700;font-size:15px}
+  .lb-sub{font-size:11px;color:var(--mut);font-weight:500}
+  .lb-pts{font-family:"Space Mono",monospace;font-weight:700;font-size:18px;color:var(--accent)}
+
+  .muted{color:var(--mut);font-size:13px;line-height:1.5}
+  .center{text-align:center}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .spin{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--accent);
+    border-radius:50%;animation:sp 1s linear infinite;margin:60px auto}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .pill-info{font-size:11px;color:var(--mut);margin-top:6px}
+  .rules{font-size:12.5px;color:var(--mut);line-height:1.7}
+  .rules b{color:var(--txt)}
+  hr{border:none;border-top:1px solid var(--line);margin:14px 0}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- ================= CONFIG SUPABASE ================= -->
+<script>
+  /* ⬇️  REMPLACE CES DEUX VALEURS par celles de ton projet Supabase
+         (Settings > API : "Project URL" et "anon public key").     */
+  window.SUPABASE_URL  = "https://VOTRE-PROJET.supabase.co";
+  window.SUPABASE_ANON  = "VOTRE_CLE_ANON_PUBLIC";
+</script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useCallback } = React;
+const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
+
+const STAGES = {
+  group:"Phase de groupes", r32:"16es de finale", r16:"8es de finale",
+  qf:"Quarts de finale", sf:"Demi-finales", final:"Finale"
+};
+const STAGE_ORDER = ["group","r32","r16","qf","sf","final"];
+const isHigh = s => ["qf","sf","final"].includes(s);
+
+/* Drapeaux emoji par pays (clés en minuscules). On reconnaît le nom anglais
+   renvoyé par API-Football ET le nom français courant. */
+const FLAGS = {
+  "qatar":"🇶🇦","ecuador":"🇪🇨","équateur":"🇪🇨","equateur":"🇪🇨","senegal":"🇸🇳","sénégal":"🇸🇳",
+  "netherlands":"🇳🇱","pays-bas":"🇳🇱","england":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","angleterre":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","iran":"🇮🇷","usa":"🇺🇸",
+  "united states":"🇺🇸","etats-unis":"🇺🇸","états-unis":"🇺🇸","wales":"🏴󠁧󠁢󠁷󠁬󠁳󠁿","pays de galles":"🏴󠁧󠁢󠁷󠁬󠁳󠁿",
+  "argentina":"🇦🇷","argentine":"🇦🇷","saudi arabia":"🇸🇦","arabie saoudite":"🇸🇦","mexico":"🇲🇽","mexique":"🇲🇽",
+  "poland":"🇵🇱","pologne":"🇵🇱","france":"🇫🇷","australia":"🇦🇺","australie":"🇦🇺","denmark":"🇩🇰","danemark":"🇩🇰",
+  "tunisia":"🇹🇳","tunisie":"🇹🇳","spain":"🇪🇸","espagne":"🇪🇸","costa rica":"🇨🇷","germany":"🇩🇪","allemagne":"🇩🇪",
+  "japan":"🇯🇵","japon":"🇯🇵","belgium":"🇧🇪","belgique":"🇧🇪","canada":"🇨🇦","morocco":"🇲🇦","maroc":"🇲🇦",
+  "croatia":"🇭🇷","croatie":"🇭🇷","brazil":"🇧🇷","brésil":"🇧🇷","bresil":"🇧🇷","serbia":"🇷🇸","serbie":"🇷🇸",
+  "switzerland":"🇨🇭","suisse":"🇨🇭","cameroon":"🇨🇲","cameroun":"🇨🇲","portugal":"🇵🇹","ghana":"🇬🇭",
+  "uruguay":"🇺🇾","south korea":"🇰🇷","korea republic":"🇰🇷","corée du sud":"🇰🇷","coree du sud":"🇰🇷",
+  "italy":"🇮🇹","italie":"🇮🇹","colombia":"🇨🇴","colombie":"🇨🇴","norway":"🇳🇴","norvège":"🇳🇴","norvege":"🇳🇴",
+  "nigeria":"🇳🇬","nigéria":"🇳🇬","sweden":"🇸🇪","suède":"🇸🇪","suede":"🇸🇪","ukraine":"🇺🇦","egypt":"🇪🇬","égypte":"🇪🇬",
+  "scotland":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","écosse":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","ecosse":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","austria":"🇦🇹","autriche":"🇦🇹","peru":"🇵🇪","pérou":"🇵🇪",
+  "chile":"🇨🇱","chili":"🇨🇱","ivory coast":"🇨🇮","côte d'ivoire":"🇨🇮","cote d'ivoire":"🇨🇮","algeria":"🇩🇿","algérie":"🇩🇿",
+  "panama":"🇵🇦","jordan":"🇯🇴","jordanie":"🇯🇴","uzbekistan":"🇺🇿","ouzbékistan":"🇺🇿","new zealand":"🇳🇿","nouvelle-zélande":"🇳🇿",
+  "south africa":"🇿🇦","afrique du sud":"🇿🇦","paraguay":"🇵🇾","cape verde":"🇨🇻","cap-vert":"🇨🇻",
+  "haiti":"🇭🇹","haïti":"🇭🇹","curacao":"🇨🇼","curaçao":"🇨🇼","jamaica":"🇯🇲","jamaïque":"🇯🇲",
+  "honduras":"🇭🇳","turkey":"🇹🇷","turquie":"🇹🇷","greece":"🇬🇷","grèce":"🇬🇷","grece":"🇬🇷","romania":"🇷🇴","roumanie":"🇷🇴",
+  "czechia":"🇨🇿","czech republic":"🇨🇿","tchéquie":"🇨🇿","tchequie":"🇨🇿","slovakia":"🇸🇰","slovaquie":"🇸🇰",
+  "hungary":"🇭🇺","hongrie":"🇭🇺","ireland":"🇮🇪","irlande":"🇮🇪","iraq":"🇮🇶","bolivia":"🇧🇴","bolivie":"🇧🇴",
+  "venezuela":"🇻🇪","congo dr":"🇨🇩","dr congo":"🇨🇩","rd congo":"🇨🇩","mali":"🇲🇱","burkina faso":"🇧🇫",
+  "uae":"🇦🇪","united arab emirates":"🇦🇪","emirats arabes unis":"🇦🇪","émirats arabes unis":"🇦🇪","qatar ":"🇶🇦"
+};
+const flagFor = (name, fallback) => {
+  if(!name) return fallback||"🏳️";
+  const e = FLAGS[name.trim().toLowerCase()];
+  // si le champ stocké est déjà un emoji (1-3 caractères non alphabétiques), on le garde
+  if(!e && fallback && !/[a-zA-Z]/.test(fallback)) return fallback;
+  return e || fallback || "🏳️";
+};
+
+function fmtDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"})
+       + " · " + d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+}
+
+/* ---------------- AUTH ---------------- */
+function Auth(){
+  const [mode,setMode]=useState("login");
+  const [username,setU]=useState(""); const [pw,setPw]=useState("");
+  const [busy,setBusy]=useState(false); const [err,setErr]=useState(""); const [ok,setOk]=useState("");
+
+  // On simule un "username" via un email interne <username>@pronos.local
+  const emailFor = u => `${u.trim().toLowerCase().replace(/[^a-z0-9_.-]/g,"")}@pronos.local`;
+
+  async function submit(){
+    setErr(""); setOk(""); 
+    if(username.trim().length<3) return setErr("Pseudo : 3 caractères minimum.");
+    if(pw.length<6) return setErr("Mot de passe : 6 caractères minimum.");
+    setBusy(true);
+    try{
+      if(mode==="signup"){
+        const { error } = await sb.auth.signUp({
+          email: emailFor(username), password: pw,
+          options:{ data:{ username: username.trim() } }
+        });
+        if(error) throw error;
+        setOk("Compte créé ! Connexion…");
+        await sb.auth.signInWithPassword({ email: emailFor(username), password: pw });
+      }else{
+        const { error } = await sb.auth.signInWithPassword({ email: emailFor(username), password: pw });
+        if(error) throw error;
+      }
+    }catch(e){
+      setErr(e.message?.includes("already")? "Ce pseudo est déjà pris."
+            : e.message?.includes("Invalid")? "Pseudo ou mot de passe incorrect."
+            : e.message);
+    }finally{ setBusy(false); }
+  }
+
+  return (
+    <div className="wrap">
+      <div className="brand"><div className="dot">⚽</div>
+        <div><h1>Pronos Mondial 2026</h1><small>Le pronostic entre potes</small></div></div>
+      <div className="card">
+        <h2 style={{fontSize:18,marginBottom:14}}>
+          {mode==="login"?"Connexion":"Créer mon compte"}</h2>
+        <label>Pseudo</label>
+        <input value={username} onChange={e=>setU(e.target.value)} placeholder="ton pseudo" autoCapitalize="none"/>
+        <div style={{height:12}}/>
+        <label>Mot de passe</label>
+        <input type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••"/>
+        <div style={{height:16}}/>
+        <button className="btn" onClick={submit} disabled={busy}>
+          {busy?"…":mode==="login"?"Se connecter":"Créer mon compte"}</button>
+        {err && <div className="err">{err}</div>}
+        {ok && <div className="ok">{ok}</div>}
+        <hr/>
+        <div className="center muted">
+          {mode==="login"
+            ? <>Première fois ? <button className="link" onClick={()=>{setMode("signup");setErr("")}}>Créer un compte</button></>
+            : <>Déjà inscrit ? <button className="link" onClick={()=>{setMode("login");setErr("")}}>Se connecter</button></>}
+        </div>
+        <div className="pill-info center">Pas besoin d'email : juste un pseudo et un mot de passe.</div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- MATCH CARD ---------------- */
+function MatchCard({m, mine, userId, onSaved}){
+  const started = new Date(m.kickoff) <= new Date();
+  const finished = m.status==="finished" && m.home_score!=null;
+  const [h,setH]=useState(mine? String(mine.home_pred):"");
+  const [a,setA]=useState(mine? String(mine.away_pred):"");
+  const [busy,setBusy]=useState(false); const [flash,setFlash]=useState("");
+
+  async function save(){
+    if(h===""||a==="") return;
+    setBusy(true); setFlash("");
+    const row={ user_id:userId, match_id:m.id, home_pred:+h, away_pred:+a, updated_at:new Date().toISOString() };
+    const { error } = await sb.from("predictions").upsert(row,{onConflict:"user_id,match_id"});
+    setBusy(false);
+    if(error){ setFlash("err:"+(error.message.includes("policy")?"Match déjà commencé.":error.message)); }
+    else { setFlash("ok"); onSaved&&onSaved(); }
+  }
+
+  const badge = finished ? <span className="badge done">Terminé</span>
+    : m.status==="live" ? <span className="badge live">● Live</span>
+    : started ? <span className="badge locked">Verrouillé</span>
+    : <span className="badge open">Ouvert</span>;
+
+  return (
+    <div className="card match">
+      <div className="meta">
+        <span>{fmtDate(m.kickoff)}</span>{badge}
+      </div>
+      <div className="teams">
+        <div className="team"><span className="flag">{flagFor(m.home_team, m.home_flag)}</span><span className="nm">{m.home_team}</span></div>
+        {finished
+          ? <div className="realscore">{m.home_score} – {m.away_score}</div>
+          : <div className="vs">VS</div>}
+        <div className="team"><span className="flag">{flagFor(m.away_team, m.away_flag)}</span><span className="nm">{m.away_team}</span></div>
+      </div>
+
+      {!started && !finished && (
+        <>
+          <div className="score-in" style={{marginTop:14}}>
+            <input type="number" inputMode="numeric" min="0" value={h} onChange={e=>setH(e.target.value)} placeholder="0"/>
+            <span className="vs">–</span>
+            <input type="number" inputMode="numeric" min="0" value={a} onChange={e=>setA(e.target.value)} placeholder="0"/>
+          </div>
+          <div className="saverow">
+            <button className="btn sm" onClick={save} disabled={busy||h===""||a===""}>
+              {busy?"…":mine?"Modifier":"Valider"}</button>
+            {flash==="ok" && <span className="saved-tag">✓ Enregistré</span>}
+            {flash?.startsWith("err:") && <span className="err" style={{margin:0}}>{flash.slice(4)}</span>}
+            {mine && flash!=="ok" && <span className="lb-sub">Ton prono : {mine.home_pred}–{mine.away_pred}</span>}
+          </div>
+        </>
+      )}
+
+      {started && !finished && (
+        <div className="pts" style={{marginTop:12}}>
+          {mine ? <span className="muted">Ton prono : <b style={{color:'var(--txt)'}}>{mine.home_pred}–{mine.away_pred}</b></span>
+                : <span className="zero">Aucun prono — 0 pt</span>}
+        </div>
+      )}
+
+      {finished && (
+        <div className={"pts "+((mine&&mine.points>0)?"win":"zero")}>
+          {mine ? <>Prono {mine.home_pred}–{mine.away_pred} · <b>{mine.points} pt{mine.points>1?"s":""}</b></>
+                : "Aucun prono — 0 pt"}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- MATCHS TAB ---------------- */
+function Matches({userId}){
+  const [matches,setMatches]=useState(null);
+  const [preds,setPreds]=useState({});
+  const [filter,setFilter]=useState("upcoming");
+
+  const load=useCallback(async()=>{
+    const { data:ms } = await sb.from("matches").select("*").order("kickoff");
+    const { data:ps } = await sb.from("predictions").select("*").eq("user_id",userId);
+    const map={}; (ps||[]).forEach(p=>map[p.match_id]=p);
+    setPreds(map); setMatches(ms||[]);
+  },[userId]);
+  useEffect(()=>{ load(); },[load]);
+
+  if(!matches) return <div className="spin"/>;
+  if(matches.length===0) return (
+    <div className="wrap"><div className="card center muted" style={{padding:30}}>
+      Aucun match pour l'instant.<br/>L'administrateur doit d'abord importer le calendrier.
+    </div></div>);
+
+  const now=new Date();
+  const filtered = matches.filter(m=>{
+    const started=new Date(m.kickoff)<=now;
+    if(filter==="upcoming") return !started;
+    if(filter==="done") return m.status==="finished";
+    return true;
+  });
+
+  // group by stage
+  const groups={}; filtered.forEach(m=>{(groups[m.stage]=groups[m.stage]||[]).push(m)});
+
+  return (
+    <div className="wrap">
+      <div className="row2" style={{gridTemplateColumns:"1fr 1fr 1fr",marginBottom:6}}>
+        {[["upcoming","À pronostiquer"],["done","Terminés"],["all","Tous"]].map(([k,l])=>(
+          <button key={k} className={"btn ghost sm"+(filter===k?" ":"")}
+            style={{width:"100%",borderColor:filter===k?"var(--accent)":"var(--line)",
+                    color:filter===k?"var(--accent)":"var(--txt)"}}
+            onClick={()=>setFilter(k)}>{l}</button>
+        ))}
+      </div>
+      {Object.keys(groups).length===0 && <div className="card center muted">Rien à afficher ici.</div>}
+      {STAGE_ORDER.filter(s=>groups[s]).map(stage=>(
+        <div key={stage}>
+          <div className="stage-h">{STAGES[stage]} {isHigh(stage)&&"· barème ↑"}</div>
+          {groups[stage].map(m=>(
+            <MatchCard key={m.id} m={m} mine={preds[m.id]} userId={userId} onSaved={load}/>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ---------------- LEADERBOARD ---------------- */
+function Board({userId}){
+  const [rows,setRows]=useState(null);
+  useEffect(()=>{ sb.from("leaderboard").select("*").then(({data})=>setRows(data||[])); },[]);
+  if(!rows) return <div className="spin"/>;
+  return (
+    <div className="wrap">
+      <div className="brand"><div className="dot">🏆</div>
+        <div><h1>Classement</h1><small>{rows.length} joueur{rows.length>1?"s":""}</small></div></div>
+      {rows.length===0 && <div className="card center muted">Pas encore de joueurs.</div>}
+      {rows.map((r,i)=>(
+        <div key={r.user_id} className={"lb-row"+(r.user_id===userId?" me":"")}>
+          <div className={"rank"+(i===0?" g1":i===1?" g2":i===2?" g3":"")}>{i+1}</div>
+          <div style={{flex:1}}>
+            <div className="lb-name">{r.username}{r.user_id===userId&&" (toi)"}</div>
+            <div className="lb-sub">{r.matches_scored} match{r.matches_scored>1?"s":""} · {r.exact_scores} score{r.exact_scores>1?"s":""} exact{r.exact_scores>1?"s":""}</div>
+          </div>
+          <div className="lb-pts">{r.total_points}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ---------------- RULES TAB ---------------- */
+function Rules({profile,onSignOut}){
+  return (
+    <div className="wrap">
+      <div className="brand"><div className="dot">📋</div>
+        <div><h1>Règles & compte</h1><small>{profile?.username}</small></div></div>
+      <div className="card">
+        <h3 style={{marginBottom:10}}>Barème des points</h3>
+        <div className="rules">
+          <b>Phase de groupes → 8es de finale</b><br/>
+          • Bon vainqueur : <b>2 pts</b><br/>
+          • Bon écart de buts : <b>3 pts</b><br/>
+          • Score exact : <b>4 pts</b><br/><hr/>
+          <b>À partir des quarts de finale</b><br/>
+          • Bon vainqueur : <b>4 pts</b><br/>
+          • Bon écart de buts : <b>5 pts</b><br/>
+          • Score exact : <b>7 pts</b><br/><hr/>
+          On garde le <b>meilleur palier</b> atteint (pas de cumul). Le résultat pris en compte est celui de la <b>fin du temps réglementaire</b> (avant prolongations / tirs au but).<br/><br/>
+          Tu peux saisir ou modifier ton prono <b>jusqu'au coup d'envoi</b>. Après, c'est verrouillé. Pas de prono = <b>0 pt</b>.
+        </div>
+      </div>
+      <button className="btn ghost" onClick={onSignOut}>Se déconnecter</button>
+    </div>
+  );
+}
+
+/* ---------------- ADMIN ---------------- */
+function Admin(){
+  const [matches,setMatches]=useState(null);
+  const [tab,setTab]=useState("scores");
+  const [msg,setMsg]=useState("");
+  // formulaire ajout match
+  const [f,setF]=useState({home_team:"",away_team:"",kickoff:"",stage:"group"});
+
+  const load=useCallback(async()=>{
+    const { data } = await sb.from("matches").select("*").order("kickoff");
+    setMatches(data||[]);
+  },[]);
+  useEffect(()=>{ load(); },[load]);
+
+  async function addMatch(){
+    setMsg("");
+    if(!f.home_team||!f.away_team||!f.kickoff){ setMsg("err:Remplis les équipes et la date."); return; }
+    // l'input datetime-local est en heure locale -> on convertit en ISO (UTC)
+    const iso = new Date(f.kickoff).toISOString();
+    const { error } = await sb.from("matches").insert({
+      home_team:f.home_team.trim(), away_team:f.away_team.trim(),
+      kickoff:iso, stage:f.stage, status:"scheduled"
+    });
+    if(error) setMsg("err:"+error.message);
+    else { setMsg("ok:Match ajouté."); setF({home_team:"",away_team:"",kickoff:"",stage:"group"}); load(); }
+  }
+
+  async function saveScore(m, hs, as, finish){
+    setMsg("");
+    const upd = { home_score: hs===""?null:+hs, away_score: as===""?null:+as,
+                  status: finish ? "finished" : "scheduled" };
+    const { error } = await sb.from("matches").update(upd).eq("id",m.id);
+    if(error) setMsg("err:"+error.message);
+    else { setMsg("ok:Score enregistré — points recalculés."); load(); }
+  }
+
+  async function delMatch(m){
+    if(!confirm(`Supprimer ${m.home_team} – ${m.away_team} ?`)) return;
+    const { error } = await sb.from("matches").delete().eq("id",m.id);
+    if(error) setMsg("err:"+error.message); else load();
+  }
+
+  if(!matches) return <div className="spin"/>;
+
+  return (
+    <div className="wrap">
+      <div className="brand"><div className="dot">🛠️</div>
+        <div><h1>Admin</h1><small>Gestion des matchs & scores</small></div></div>
+
+      <div className="row2" style={{marginBottom:6}}>
+        {[["scores","Scores"],["add","Ajouter un match"]].map(([k,l])=>(
+          <button key={k} className="btn ghost sm" style={{width:"100%",
+            borderColor:tab===k?"var(--accent)":"var(--line)",
+            color:tab===k?"var(--accent)":"var(--txt)"}} onClick={()=>setTab(k)}>{l}</button>
+        ))}
+      </div>
+
+      {msg.startsWith("ok:") && <div className="ok" style={{marginBottom:10}}>{msg.slice(3)}</div>}
+      {msg.startsWith("err:") && <div className="err" style={{marginBottom:10}}>{msg.slice(4)}</div>}
+
+      {tab==="add" && (
+        <div className="card">
+          <label>Équipe à domicile</label>
+          <input value={f.home_team} onChange={e=>setF({...f,home_team:e.target.value})} placeholder="France"/>
+          <div style={{height:10}}/>
+          <label>Équipe à l'extérieur</label>
+          <input value={f.away_team} onChange={e=>setF({...f,away_team:e.target.value})} placeholder="Brazil"/>
+          <div style={{height:10}}/>
+          <label>Date & heure du coup d'envoi (ton heure locale)</label>
+          <input type="datetime-local" value={f.kickoff} onChange={e=>setF({...f,kickoff:e.target.value})}/>
+          <div style={{height:10}}/>
+          <label>Phase</label>
+          <select value={f.stage} onChange={e=>setF({...f,stage:e.target.value})}
+            style={{width:"100%",background:"#0d1326",border:"1px solid var(--line)",color:"var(--txt)",
+                    padding:"13px 14px",borderRadius:12,fontSize:16,fontFamily:"inherit"}}>
+            {STAGE_ORDER.map(s=><option key={s} value={s}>{STAGES[s]}{isHigh(s)?" (barème ↑)":""}</option>)}
+          </select>
+          <div className="pill-info">Astuce : écris les noms en anglais (France, Brazil, Spain…) pour que les drapeaux s'affichent automatiquement.</div>
+          <div style={{height:14}}/>
+          <button className="btn" onClick={addMatch}>Ajouter ce match</button>
+        </div>
+      )}
+
+      {tab==="scores" && (
+        matches.length===0
+          ? <div className="card center muted">Aucun match. Ajoute-en un, ou importe le calendrier via l'API.</div>
+          : matches.map(m=>(
+            <AdminScoreRow key={m.id} m={m} onSave={saveScore} onDelete={delMatch}/>
+          ))
+      )}
+    </div>
+  );
+}
+
+function AdminScoreRow({m,onSave,onDelete}){
+  const [hs,setHs]=useState(m.home_score==null?"":String(m.home_score));
+  const [as,setAs]=useState(m.away_score==null?"":String(m.away_score));
+  return (
+    <div className="card" style={{padding:13}}>
+      <div className="meta" style={{marginBottom:8}}>
+        <span>{fmtDate(m.kickoff)} · {STAGES[m.stage]}</span>
+        {m.status==="finished" ? <span className="badge done">Terminé</span> : <span className="badge open">{m.status}</span>}
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+        <span style={{flex:"1 1 40%",fontWeight:700,fontSize:13}}>
+          {flagFor(m.home_team,m.home_flag)} {m.home_team}</span>
+        <input type="number" inputMode="numeric" value={hs} onChange={e=>setHs(e.target.value)}
+          style={{width:44,textAlign:"center"}}/>
+        <span className="vs">–</span>
+        <input type="number" inputMode="numeric" value={as} onChange={e=>setAs(e.target.value)}
+          style={{width:44,textAlign:"center"}}/>
+        <span style={{flex:"1 1 40%",fontWeight:700,fontSize:13,textAlign:"right"}}>
+          {m.away_team} {flagFor(m.away_team,m.away_flag)}</span>
+      </div>
+      <div className="saverow">
+        <button className="btn sm" onClick={()=>onSave(m,hs,as,true)} disabled={hs===""||as===""}>
+          Valider (terminé)</button>
+        <button className="btn ghost sm" onClick={()=>onSave(m,hs,as,false)}>Enregistrer sans clore</button>
+        <button className="link" style={{color:"var(--accent2)"}} onClick={()=>onDelete(m)}>Suppr.</button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- APP ---------------- */
+function App(){
+  const [session,setSession]=useState(undefined);
+  const [profile,setProfile]=useState(null);
+  const [tab,setTab]=useState("matches");
+
+  useEffect(()=>{
+    sb.auth.getSession().then(({data})=>setSession(data.session));
+    const { data:sub } = sb.auth.onAuthStateChange((_e,s)=>setSession(s));
+    return ()=>sub.subscription.unsubscribe();
+  },[]);
+  useEffect(()=>{
+    if(session?.user){
+      sb.from("profiles").select("*").eq("id",session.user.id).single()
+        .then(({data})=>setProfile(data));
+    }else setProfile(null);
+  },[session]);
+
+  if(session===undefined) return <div className="spin"/>;
+  if(!session) return <Auth/>;
+
+  const uid=session.user.id;
+  const admin = !!profile?.is_admin;
+  return (
+    <>
+      {tab==="matches" && <Matches userId={uid}/>}
+      {tab==="board"   && <Board userId={uid}/>}
+      {tab==="rules"   && <Rules profile={profile} onSignOut={()=>sb.auth.signOut()}/>}
+      {tab==="admin" && admin && <Admin/>}
+      <nav className="tabs"><div className="inner">
+        <button className={"tab"+(tab==="matches"?" active":"")} onClick={()=>setTab("matches")}>
+          <span className="ic">⚽</span>Matchs</button>
+        <button className={"tab"+(tab==="board"?" active":"")} onClick={()=>setTab("board")}>
+          <span className="ic">🏆</span>Classement</button>
+        <button className={"tab"+(tab==="rules"?" active":"")} onClick={()=>setTab("rules")}>
+          <span className="ic">📋</span>Règles</button>
+        {admin && (
+          <button className={"tab"+(tab==="admin"?" active":"")} onClick={()=>setTab("admin")}>
+            <span className="ic">🛠️</span>Admin</button>
+        )}
+      </div></nav>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
