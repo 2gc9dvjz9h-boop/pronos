@@ -183,7 +183,7 @@ function Auth(){
   const [busy,setBusy]=useState(false); const [err,setErr]=useState(""); const [ok,setOk]=useState("");
 
   // On simule un "username" via un email interne <username>@pronos.local
-  const emailFor = u => `${u.trim().toLowerCase().replace(/[^a-z0-9_.-]/g,"")}@pronos.local`;
+  const emailFor = u => `${u.trim().toLowerCase().replace(/[^a-z0-9_.-]/g,"")}@pronos.example.com`;
 
   async function submit(){
     setErr(""); setOk(""); 
