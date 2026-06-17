@@ -116,6 +116,19 @@
 </head>
 <body>
 <div id="root"></div>
+  <script>
+  window.onerror = function(msg, src, line){
+    document.body.innerHTML = "<pre style='color:#ff5d73;padding:20px;white-space:pre-wrap;font-size:13px'>ERREUR : " + msg + "\nLigne : " + line + "</pre>";
+    return true;
+  };
+  setTimeout(function(){
+    var r = document.getElementById("root");
+    if(r && r.innerHTML.trim()===""){
+      document.body.innerHTML = "<pre style='color:#ffd25a;padding:20px;white-space:pre-wrap;font-size:13px'>Rien apres 6s.\nReact:" + (typeof React!=="undefined") + " ReactDOM:" + (typeof ReactDOM!=="undefined") + " Babel:" + (typeof Babel!=="undefined") + " Supabase:" + (typeof window.supabase!=="undefined") + "</pre>";
+    }
+  }, 6000);
+</script>
+
 
 <!-- ================= CONFIG SUPABASE ================= -->
 <script>
