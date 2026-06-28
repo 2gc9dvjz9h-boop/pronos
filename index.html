@@ -45,7 +45,7 @@ label{font-size:12px;color:var(–mut);display:block;margin:0 0 6px;font-weight:
 input{width:100%;background:#0d1326;border:1px solid var(–line);color:var(–txt);
 padding:13px 14px;border-radius:12px;font-size:16px;font-family:inherit;outline:none}
 input:focus{border-color:var(–accent)}
-  input{color:#eef2ff !important;-webkit-text-fill-color:#eef2ff !important}
+input{color:#eef2ff !important;-webkit-text-fill-color:#eef2ff !important}
 .btn{width:100%;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:700;
 font-family:inherit;cursor:pointer;background:linear-gradient(135deg,var(–accent),#0bbf85);
 color:#04130c;transition:transform .06s, opacity .2s}
@@ -136,7 +136,7 @@ const STAGES = {
   qf:"Quarts de finale", sf:"Demi-finales", final:"Finale"
 };
 const STAGE_ORDER = ["group","r32","r16","qf","sf","final"];
-const isHigh = s => ["qf","sf","final"].includes(s);
+const isHigh = s => ["r32","r16","qf","sf","final"].includes(s);
 
 const FLAGS = {
   "qatar":"🇶🇦","ecuador":"🇪🇨","équateur":"🇪🇨","equateur":"🇪🇨","senegal":"🇸🇳","sénégal":"🇸🇳",
@@ -389,6 +389,7 @@ function Matches({userId}){
   const filtered = matches.filter(m=>{
     const started=new Date(m.kickoff)<=now;
     if(filter==="upcoming") return !started;
+    if(filter==="poules") return m.stage==="group";
     if(filter==="done") return m.status==="finished";
     return true;
   });
@@ -397,11 +398,11 @@ function Matches({userId}){
 
   return (
     <div className="wrap">
-      <div className="row2" style={{gridTemplateColumns:"1fr 1fr 1fr",marginBottom:6}}>
-        {[["upcoming","À pronostiquer"],["done","Terminés"],["all","Tous"]].map(([k,l])=>(
+      <div className="row2" style={{gridTemplateColumns:"1fr 1fr 1fr 1fr",marginBottom:6}}>
+        {[["upcoming","À parier"],["poules","Poules"],["done","Terminés"],["all","Tous"]].map(([k,l])=>(
           <button key={k} className={"btn ghost sm"+(filter===k?" ":"")}
             style={{width:"100%",borderColor:filter===k?"var(--accent)":"var(--line)",
-                    color:filter===k?"var(--accent)":"var(--txt)"}}
+                    color:filter===k?"var(--accent)":"var(--txt)",padding:"9px 4px",fontSize:12}}
             onClick={()=>setFilter(k)}>{l}</button>
         ))}
       </div>
@@ -451,15 +452,24 @@ function Rules({profile,onSignOut}){
       <div className="card">
         <h3 style={{marginBottom:10}}>Barème des points</h3>
         <div className="rules">
-          <b>Phase de groupes → 8es de finale</b><br/>
+          <b>Phase de groupes</b><br/>
           • Bon vainqueur : <b>2 pts</b><br/>
           • Bon écart de buts : <b>3 pts</b><br/>
           • Score exact : <b>4 pts</b><br/><hr/>
-          <b>À partir des quarts de finale</b><br/>
-          • Bon vainqueur : <b>4 pts</b><br/>
-          • Bon écart de buts : <b>5 pts</b><br/>
-          • Score exact : <b>7 pts</b><br/><hr/>
-          On garde le <b>meilleur palier</b> atteint (pas de cumul). Le résultat pris en compte est celui de la <b>fin du temps réglementaire</b> (avant prolongations / tirs au but).<br/><br/>
+          <b>16es et 8es de finale</b><br/>
+          • Bon vainqueur : <b>5 pts</b><br/>
+          • Bon écart de buts : <b>7 pts</b><br/>
+          • Score exact : <b>9 pts</b><br/><hr/>
+          <b>Quarts et demi-finales</b><br/>
+          • Bon vainqueur : <b>6 pts</b><br/>
+          • Bon écart de buts : <b>8 pts</b><br/>
+          • Score exact : <b>10 pts</b><br/><hr/>
+          <b>Finale</b><br/>
+          • Bon vainqueur : <b>8 pts</b><br/>
+          • Bon écart de buts : <b>10 pts</b><br/>
+          • Score exact : <b>12 pts</b><br/><hr/>
+          On garde le <b>meilleur palier</b> atteint (pas de cumul).<br/><br/>
+          <b>Phase de groupes :</b> résultat de fin de match. <b>Phase à élimination directe :</b> résultat à la <b>fin des prolongations</b> s'il y en a, sans tenir compte des tirs au but.<br/><br/>
           Tu peux saisir ou modifier ton prono <b>jusqu'au coup d'envoi</b>. Après, c'est verrouillé. Pas de prono = <b>0 pt</b>.
         </div>
       </div>
@@ -647,27 +657,27 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 
 }
 function run(){
-  if(typeof React==="undefined" || typeof ReactDOM==="undefined"){
-    return showError("React n'a pas pu se charger. Verifie ta connexion puis recharge.");
-  }
-  if(typeof Babel==="undefined"){
-    return showError("Babel n'a pas pu se charger. Verifie ta connexion puis recharge.");
-  }
-  if(typeof window.supabase==="undefined"){
-    return showError("Supabase n'a pas pu se charger. Verifie ta connexion puis recharge.");
-  }
-  var src = document.getElementById("app-code").textContent;
-  try{
-    var out = Babel.transform(src, { presets: ["react"] }).code;
-    var s = document.createElement("script");
-    s.textContent = out;
-    document.body.appendChild(s);
-  }catch(e){
-    showError("Erreur dans le code de l'application :\n\n" + (e && e.message ? e.message : e));
-  }
+if(typeof React===“undefined” || typeof ReactDOM===“undefined”){
+return showError(“React n’a pas pu se charger. Verifie ta connexion puis recharge.”);
 }
-if(document.readyState === "complete") run();
-else window.addEventListener("load", run);
+if(typeof Babel===“undefined”){
+return showError(“Babel n’a pas pu se charger. Verifie ta connexion puis recharge.”);
+}
+if(typeof window.supabase===“undefined”){
+return showError(“Supabase n’a pas pu se charger. Verifie ta connexion puis recharge.”);
+}
+var src = document.getElementById(“app-code”).textContent;
+try{
+var out = Babel.transform(src, { presets: [“react”] }).code;
+var s = document.createElement(“script”);
+s.textContent = out;
+document.body.appendChild(s);
+}catch(e){
+showError(“Erreur dans le code de l’application :\n\n” + (e && e.message ? e.message : e));
+}
+}
+if(document.readyState === “complete”) run();
+else window.addEventListener(“load”, run);
 
 })();
 </script>
